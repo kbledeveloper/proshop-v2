@@ -12,7 +12,7 @@ const PaymentScreen = () => {
   // Initializing variables and hooks
   const navigate = useNavigate(); // React Router hook for navigation
   const cart = useSelector((state) => state.cart); // Accessing Redux state (cart slice)
-  const { shippingAddress } = cart; // Extracting shippingAddress from the cart state
+  const { shippingAddress } =  ; // Extracting shippingAddress from the cart state
 
   // Using useEffect hook to check if the shipping address is provided. If not, redirect to the ShippingScreen.
   useEffect(() => {

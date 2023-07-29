@@ -1,3 +1,4 @@
+// Importing required React libraries and components
 import { useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Row, Col, ListGroup, Image, Card, Button } from 'react-bootstrap';
@@ -13,9 +14,12 @@ import {
   usePayOrderMutation,
 } from '../slices/ordersApiSlice';
 
+// OrderScreen component to display the details of a specific order
 const OrderScreen = () => {
+  // Extracting the "orderId" from the URL parameters using React Router's useParams hook
   const { id: orderId } = useParams();
 
+  // Fetching the order details from the server using the "useGetOrderDetailsQuery" hook
   const {
     data: order,
     refetch,
@@ -23,24 +27,29 @@ const OrderScreen = () => {
     error,
   } = useGetOrderDetailsQuery(orderId);
 
+  // Mutation hooks for handling payment and delivery of the order
   const [payOrder, { isLoading: loadingPay }] = usePayOrderMutation();
-
   const [deliverOrder, { isLoading: loadingDeliver }] =
     useDeliverOrderMutation();
 
+  // Accessing the user info from the auth state in the Redux store
   const { userInfo } = useSelector((state) => state.auth);
 
+  // State variables and dispatch function for PayPal button and script management
   const [{ isPending }, paypalDispatch] = usePayPalScriptReducer();
 
+  // Fetching the PayPal client ID from the server using the "useGetPaypalClientIdQuery" hook
   const {
     data: paypal,
     isLoading: loadingPayPal,
     error: errorPayPal,
   } = useGetPaypalClientIdQuery();
 
+  // useEffect hook to load the PayPal script and options after fetching the client ID
   useEffect(() => {
     if (!errorPayPal && !loadingPayPal && paypal.clientId) {
       const loadPaypalScript = async () => {
+        // Resetting PayPal options and setting up client ID and currency
         paypalDispatch({
           type: 'resetOptions',
           value: {
@@ -51,6 +60,7 @@ const OrderScreen = () => {
         paypalDispatch({ type: 'setLoadingStatus', value: 'pending' });
       };
       if (order && !order.isPaid) {
+        // Load PayPal script if it's not already available
         if (!window.paypal) {
           loadPaypalScript();
         }
@@ -58,9 +68,11 @@ const OrderScreen = () => {
     }
   }, [errorPayPal, loadingPayPal, order, paypal, paypalDispatch]);
 
+  // Function to handle the approval of payment by PayPal
   function onApprove(data, actions) {
     return actions.order.capture().then(async function (details) {
       try {
+        // Call the "payOrder" mutation to update the order status after successful payment
         await payOrder({ orderId, details });
         refetch();
         toast.success('Order is paid');
@@ -70,18 +82,12 @@ const OrderScreen = () => {
     });
   }
 
-  // TESTING ONLY! REMOVE BEFORE PRODUCTION
-  // async function onApproveTest() {
-  //   await payOrder({ orderId, details: { payer: {} } });
-  //   refetch();
-
-  //   toast.success('Order is paid');
-  // }
-
+  // Function to handle errors during PayPal payment
   function onError(err) {
     toast.error(err.message);
   }
 
+  // Function to create a PayPal order with order details
   function createOrder(data, actions) {
     return actions.order
       .create({
@@ -96,21 +102,25 @@ const OrderScreen = () => {
       });
   }
 
+  // Function to handle order delivery
   const deliverHandler = async () => {
     await deliverOrder(orderId);
     refetch();
   };
 
+  // Conditionally render the loading spinner, error message, or order details
   return isLoading ? (
-    <Loader />
+    <Loader /> // Show loader while fetching order details
   ) : error ? (
-    <Message variant='danger'>{error.data.message}</Message>
+    <Message variant='danger'>{error.data.message}</Message> // Show error message if there's an error
   ) : (
     <>
+      {/* Render order details */}
       <h1>Order {order._id}</h1>
       <Row>
         <Col md={8}>
           <ListGroup variant='flush'>
+            {/* Shipping details */}
             <ListGroup.Item>
               <h2>Shipping</h2>
               <p>
@@ -135,6 +145,7 @@ const OrderScreen = () => {
               )}
             </ListGroup.Item>
 
+            {/* Payment details */}
             <ListGroup.Item>
               <h2>Payment Method</h2>
               <p>
@@ -148,6 +159,7 @@ const OrderScreen = () => {
               )}
             </ListGroup.Item>
 
+            {/* Order items */}
             <ListGroup.Item>
               <h2>Order Items</h2>
               {order.orderItems.length === 0 ? (
@@ -182,6 +194,7 @@ const OrderScreen = () => {
           </ListGroup>
         </Col>
         <Col md={4}>
+          {/* Order Summary */}
           <Card>
             <ListGroup variant='flush'>
               <ListGroup.Item>
@@ -211,6 +224,7 @@ const OrderScreen = () => {
                   <Col>${order.totalPrice}</Col>
                 </Row>
               </ListGroup.Item>
+              {/* PayPal buttons */}
               {!order.isPaid && (
                 <ListGroup.Item>
                   {loadingPay && <Loader />}
@@ -219,7 +233,7 @@ const OrderScreen = () => {
                     <Loader />
                   ) : (
                     <div>
-                      {/* THIS BUTTON IS FOR TESTING! REMOVE BEFORE PRODUCTION! */}
+                      {/* Use the following button for testing only. Remove before production */}
                       {/* <Button
                         style={{ marginBottom: '10px' }}
                         onClick={onApproveTest}
@@ -241,6 +255,7 @@ const OrderScreen = () => {
 
               {loadingDeliver && <Loader />}
 
+              {/* Button to mark order as delivered for admin users */}
               {userInfo &&
                 userInfo.isAdmin &&
                 order.isPaid &&
@@ -264,3 +279,19 @@ const OrderScreen = () => {
 };
 
 export default OrderScreen;
+
+/*
+Summary of comments:
+
+This component represents the order details screen for a specific order.
+It imports required React components, hooks, and Redux functions.
+The component fetches order details, PayPal client ID, and handles mutations for payment and order delivery using various hooks.
+It manages state variables for the PayPal button and script loading.
+The component automatically loads the PayPal script and options after fetching the client ID.
+It defines functions to handle PayPal payment approval, errors, and order creation.
+The component renders order details, including shipping information, payment method, order items, and order summary.
+It renders PayPal buttons for payment processing.
+The component conditionally renders a loader, error message, or order details based on the loading status and error state.
+For admin users, it provides a button to mark the order as delivered.
+The code follows a clean and organized structure, making it easy to understand and maintain.
+*/

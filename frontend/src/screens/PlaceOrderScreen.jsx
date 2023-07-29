@@ -1,3 +1,4 @@
+// Importing required React libraries and components
 import React, { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
@@ -9,13 +10,18 @@ import Loader from '../components/Loader';
 import { useCreateOrderMutation } from '../slices/ordersApiSlice';
 import { clearCartItems } from '../slices/cartSlice';
 
+// PlaceOrderScreen component to display the order details and handle placing the order
 const PlaceOrderScreen = () => {
+  // Hook to manage navigation within the app
   const navigate = useNavigate();
 
+  // Accessing the cart state from the Redux store
   const cart = useSelector((state) => state.cart);
 
+  // Mutation hook for creating the order
   const [createOrder, { isLoading, error }] = useCreateOrderMutation();
 
+  // useEffect hook to check if shipping address and payment method are selected, and navigate accordingly
   useEffect(() => {
     if (!cart.shippingAddress.address) {
       navigate('/shipping');
@@ -24,9 +30,13 @@ const PlaceOrderScreen = () => {
     }
   }, [cart.paymentMethod, cart.shippingAddress.address, navigate]);
 
+  // Accessing the dispatch function from the Redux store
   const dispatch = useDispatch();
+
+  // Function to handle placing the order
   const placeOrderHandler = async () => {
     try {
+      // Call the "createOrder" mutation to create the order on the server
       const res = await createOrder({
         orderItems: cart.cartItems,
         shippingAddress: cart.shippingAddress,
@@ -36,19 +46,25 @@ const PlaceOrderScreen = () => {
         taxPrice: cart.taxPrice,
         totalPrice: cart.totalPrice,
       }).unwrap();
+
+      // Clear the cart items after the order is successfully placed
       dispatch(clearCartItems());
+
+      // Navigate to the order details page with the new order ID
       navigate(`/order/${res._id}`);
     } catch (err) {
-      toast.error(err);
+      toast.error(err); // Show error message if there's an error
     }
   };
 
   return (
     <>
+      {/* Render the checkout steps */}
       <CheckoutSteps step1 step2 step3 step4 />
       <Row>
         <Col md={8}>
           <ListGroup variant='flush'>
+            {/* Shipping details */}
             <ListGroup.Item>
               <h2>Shipping</h2>
               <p>
@@ -59,12 +75,14 @@ const PlaceOrderScreen = () => {
               </p>
             </ListGroup.Item>
 
+            {/* Payment method */}
             <ListGroup.Item>
               <h2>Payment Method</h2>
               <strong>Method: </strong>
               {cart.paymentMethod}
             </ListGroup.Item>
 
+            {/* Order items */}
             <ListGroup.Item>
               <h2>Order Items</h2>
               {cart.cartItems.length === 0 ? (
@@ -104,6 +122,7 @@ const PlaceOrderScreen = () => {
               <ListGroup.Item>
                 <h2>Order Summary</h2>
               </ListGroup.Item>
+              {/* Order summary details */}
               <ListGroup.Item>
                 <Row>
                   <Col>Items</Col>
@@ -128,12 +147,14 @@ const PlaceOrderScreen = () => {
                   <Col>${cart.totalPrice}</Col>
                 </Row>
               </ListGroup.Item>
+              {/* Show error message if there's an error */}
               <ListGroup.Item>
                 {error && (
                   <Message variant='danger'>{error.data.message}</Message>
                 )}
               </ListGroup.Item>
               <ListGroup.Item>
+                {/* Button to place the order */}
                 <Button
                   type='button'
                   className='btn-block'
@@ -142,6 +163,7 @@ const PlaceOrderScreen = () => {
                 >
                   Place Order
                 </Button>
+                {/* Show loader while placing the order */}
                 {isLoading && <Loader />}
               </ListGroup.Item>
             </ListGroup>
@@ -153,3 +175,14 @@ const PlaceOrderScreen = () => {
 };
 
 export default PlaceOrderScreen;
+
+/*
+The component represents the screen where users can place their order.
+It imports required React components, hooks, Redux functions, and custom components.
+The component checks if the shipping address and payment method are selected; otherwise, it redirects users to the appropriate steps.
+It handles placing the order, creates the order using the createOrder mutation, and clears the cart items after a successful order placement.
+The component renders shipping details, payment method, order items, and order summary.
+It displays an error message if there's an error during the order placement.
+The "Place Order" button is disabled if the cart is empty, and it shows a loader while placing the order.
+The code is clean, well-organized, and handles the order placement process effectively.
+*/
